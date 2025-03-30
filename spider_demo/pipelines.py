@@ -1,3 +1,5 @@
+from time import process_time
+
 import openpyxl
 import pymysql
 
@@ -49,3 +51,26 @@ class DbPipeline:
             self.data
         )
         self.conn.commit()
+
+class TaobaoPipeline:
+    @classmethod
+    def from_crawler(cls, crawler):
+        host = crawler.settings.get('HOST')
+        port = crawler.settings.get('PORT')
+        username = crawler.settings.get('USERNAME')
+        password = crawler.settings.get('PASSWORD')
+        database = crawler.settings.get('DATABASE')
+        return cls(host, port, username, password, database)
+    def __init__(self,host,port,username,password,database):
+        self.conn=pymysql.connect(host=host,port=port,
+                                  user=username,password=password,
+                                  database=database,charset='utf8mb4',autocommit=True)
+        self.cursor = self.conn.cursor()
+    def process_item(self, item, spider):
+        title=item.get('title','')
+        price=item.get('price','')
+        deal_count=item.get('deal_count','')
+        shop=item.get('shop','')
+        location=item.get('location','')
+        self.cursor.execute('insert into ta_taobao_goods(`g_title`,`g_price`,`g_deal_count`,`g_shop`,`g_location`) values (%s,%s,%s,%s,%s)',)
+        return item

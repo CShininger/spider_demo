@@ -7,6 +7,9 @@ from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+from scrapy.http import HtmlResponse  # 必须导入
+
+from spider_demo.utils import add_cookies, create_chrome_driver
 
 
 class SpiderDemoSpiderMiddleware:
@@ -68,6 +71,13 @@ class SpiderDemoDownloaderMiddleware:
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
+    def __init__(self):
+        self.browser=create_chrome_driver(headless=False)
+        self.browser.get('https://www.taobao.com')
+        add_cookies(self.browser, 'taobao.json')
+
+    def __del__(self):
+        self.browser.close()
     def process_request(self, request, spider):
         # Called for each request that goes through the downloader
         # middleware.
@@ -78,7 +88,8 @@ class SpiderDemoDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        return None
+        self.browser.get(request.url)
+        return HtmlResponse(url=request.url,body=self.browser.page_source, request=request, encoding='utf-8')
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
@@ -101,3 +112,5 @@ class SpiderDemoDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+
+
